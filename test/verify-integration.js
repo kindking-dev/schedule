@@ -8,6 +8,12 @@ console.log('--- STARTING VERIFICATION OF SCHEDULE + AITUMAP INTEGRATION ---');
 const requiredFiles = [
   'index.html',
   'index.html.bak',
+  'manifest.json',
+  'sw.js',
+  'assets/favicon.svg',
+  'assets/icon-192.png',
+  'assets/icon-512.png',
+  'assets/apple-touch-icon.png',
   'config/room-mapping.js',
   'integrations/aitumap/aitumap-data.js',
   'integrations/aitumap/aitumap-viewer.js',
