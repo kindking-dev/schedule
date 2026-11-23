@@ -1,0 +1,506 @@
+/* AITUMAP - Apple Maps / Linear Aesthetic Theme */
+
+:root {
+  --aitu-bg: #111214;
+  --aitu-surface: #191b1f;
+  --aitu-surface2: #22252a;
+  --aitu-surface3: #2a2e35;
+  --aitu-line: rgba(255, 255, 255, 0.09);
+  --aitu-text: #f1f2f4;
+  --aitu-muted: #9298a2;
+  --aitu-faint: #707782;
+  --aitu-accent: #83aaff;
+  --aitu-accent-soft: rgba(110, 153, 255, 0.16);
+  --aitu-accent-glow: rgba(110, 153, 255, 0.4);
+  --aitu-target-fill: #3b82f6;
+  --aitu-target-pulse: #60a5fa;
+  --aitu-map-bg: #14161a;
+  --aitu-wall-stroke: #4b525f;
+  --aitu-room-fill: #1e2638;
+  --aitu-room-hover: #29354e;
+  --aitu-gym-fill: #1c324c;
+  --aitu-wc-fill: #3a2642;
+  --aitu-tech-fill: #272a31;
+  --aitu-shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
+  --aitu-radius: 14px;
+}
+
+:root[data-theme="light"],
+body.light-theme {
+  --aitu-bg: #f4f5f7;
+  --aitu-surface: #ffffff;
+  --aitu-surface2: #f0f2f5;
+  --aitu-surface3: #e7eaf0;
+  --aitu-line: rgba(25, 35, 50, 0.11);
+  --aitu-text: #20232a;
+  --aitu-muted: #6d7580;
+  --aitu-faint: #9097a1;
+  --aitu-accent: #3974df;
+  --aitu-accent-soft: rgba(57, 116, 223, 0.12);
+  --aitu-accent-glow: rgba(57, 116, 223, 0.35);
+  --aitu-target-fill: #2563eb;
+  --aitu-target-pulse: #3b82f6;
+  --aitu-map-bg: #e6e9ef;
+  --aitu-wall-stroke: #b2b9c7;
+  --aitu-room-fill: #cfe2ff;
+  --aitu-room-hover: #b6d4fe;
+  --aitu-gym-fill: #bfdbfe;
+  --aitu-wc-fill: #f3e8ff;
+  --aitu-tech-fill: #e2e8f0;
+  --aitu-shadow: 0 14px 40px rgba(25, 35, 50, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.aitumap-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--aitu-map-bg);
+  color: var(--aitu-text);
+  font-family: Inter, Manrope, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+/* Map Canvas Viewport */
+.aitumap-viewport {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  cursor: grab;
+}
+
+.aitumap-viewport.is-panning {
+  cursor: grabbing;
+}
+
+.aitumap-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+  transition: transform 0.05s linear;
+}
+
+.aitumap-stage.smooth-animate {
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* SVG Rendering & Styling */
+.aitumap-svg {
+  display: block;
+  width: 924.69px;
+  height: 396.16px;
+  overflow: visible;
+}
+
+/* Base Building Wallpaper */
+.aitumap-svg .bg {
+  fill: var(--aitu-surface);
+  stroke: var(--aitu-wall-stroke);
+  stroke-width: 1.2;
+}
+
+.aitumap-svg .label-huge {
+  fill: var(--aitu-faint);
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* Rooms */
+.aitumap-svg .map-groups-rooms g polyline,
+.aitumap-svg .map-groups-rooms g polygon,
+.aitumap-svg .map-groups-rooms g line,
+.aitumap-svg .map-groups-rooms-vk g polyline,
+.aitumap-svg .map-groups-rooms-vk g polygon {
+  fill: var(--aitu-room-fill);
+  stroke: var(--aitu-wall-stroke);
+  stroke-width: 0.75;
+  cursor: pointer;
+  transition: fill 0.2s ease, opacity 0.2s ease, filter 0.2s ease;
+}
+
+.aitumap-svg .map-groups-rooms g path,
+.aitumap-svg .map-groups-rooms g text {
+  fill: var(--aitu-text) !important;
+  stroke: none !important;
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.aitumap-svg .map-groups-rooms g:hover polyline,
+.aitumap-svg .map-groups-rooms g:hover polygon {
+  fill: var(--aitu-room-hover);
+}
+
+/* Selected Room Target Highlight */
+.aitumap-svg g.room-selected-target polyline,
+.aitumap-svg g.room-selected-target polygon,
+.aitumap-svg g.room-map-group-search-target polyline,
+.aitumap-svg g.room-map-group-search-target polygon {
+  fill: var(--aitu-target-fill) !important;
+  stroke: #ffffff !important;
+  stroke-width: 1.8 !important;
+  filter: drop-shadow(0 0 10px var(--aitu-accent-glow));
+  animation: roomPulse 2.2s infinite ease-in-out;
+}
+
+.aitumap-svg g.room-selected-target path,
+.aitumap-svg g.room-selected-target text,
+.aitumap-svg g.room-map-group-search-target path,
+.aitumap-svg g.room-map-group-search-target text {
+  fill: #ffffff !important;
+  font-weight: 700;
+  opacity: 1 !important;
+}
+
+@keyframes roomPulse {
+  0% {
+    fill: var(--aitu-target-fill);
+    filter: drop-shadow(0 0 6px var(--aitu-accent-glow));
+  }
+  50% {
+    fill: var(--aitu-target-pulse);
+    filter: drop-shadow(0 0 16px var(--aitu-accent-glow));
+  }
+  100% {
+    fill: var(--aitu-target-fill);
+    filter: drop-shadow(0 0 6px var(--aitu-accent-glow));
+  }
+}
+
+/* Beacon Pin Ring */
+.aitumap-beacon {
+  position: absolute;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  transition: opacity 0.3s ease;
+}
+
+.aitumap-beacon-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px solid var(--aitu-target-pulse);
+  animation: beaconWave 1.8s cubic-bezier(0.2, 0.8, 0.4, 1) infinite;
+}
+
+.aitumap-beacon-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2.5px solid var(--aitu-target-fill);
+  box-shadow: 0 0 10px var(--aitu-accent-glow);
+}
+
+@keyframes beaconWave {
+  0% {
+    transform: scale(0.4);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+/* Gym & Special Areas */
+.aitumap-svg .map-groups-gym polygon,
+.aitumap-svg .map-groups-gym polyline,
+.aitumap-svg .map-groups-gym path {
+  fill: var(--aitu-gym-fill);
+  stroke: var(--aitu-wall-stroke);
+}
+
+.aitumap-svg .map-groups-gym-pole polygon {
+  fill: none;
+  stroke: var(--aitu-wall-stroke);
+}
+
+/* Techs, WCs, Stairs, Escapes */
+.aitumap-svg .map-groups-techs polygon,
+.aitumap-svg .map-groups-techs polyline {
+  fill: var(--aitu-tech-fill);
+  stroke: var(--aitu-wall-stroke);
+}
+
+.aitumap-svg .map-groups-wcs polyline {
+  fill: var(--aitu-wc-fill);
+  stroke: var(--aitu-wall-stroke);
+}
+
+.aitumap-svg .map-groups-stairs polygon,
+.aitumap-svg .map-groups-stairs polyline,
+.aitumap-svg .map-groups-stairs-fill polygon,
+.aitumap-svg .map-groups-stairs-fill polyline {
+  fill: var(--aitu-surface2);
+  stroke: var(--aitu-wall-stroke);
+}
+
+.aitumap-svg .map-groups-stairs g path:nth-child(1),
+.aitumap-svg .map-groups-stairs-fill g path:nth-child(1),
+.aitumap-svg .map-groups-wcs-icon path:nth-child(1) {
+  fill: var(--aitu-accent);
+}
+
+.aitumap-svg .map-groups-escapes-icon path:nth-child(1) {
+  fill: #10b981;
+}
+
+/* Dimmed Blocks when filtered */
+.aitumap-svg .block-dimmed {
+  opacity: 0.25;
+  transition: opacity 0.25s ease;
+}
+
+/* UI Controls Overlay */
+.aitumap-controls-top {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.aitumap-search-box {
+  pointer-events: auto;
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--aitu-surface);
+  border: 1px solid var(--aitu-line);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  padding: 0 10px;
+  height: 38px;
+  width: min(100%, 260px);
+  backdrop-filter: blur(8px);
+}
+
+.aitumap-search-box svg {
+  width: 15px;
+  height: 15px;
+  color: var(--aitu-muted);
+  flex: none;
+  margin-right: 8px;
+}
+
+.aitumap-search-input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--aitu-text);
+  font-size: 12px;
+}
+
+.aitumap-search-input::placeholder {
+  color: var(--aitu-muted);
+}
+
+/* Floor Switcher Pill */
+.aitumap-floor-pill {
+  pointer-events: auto;
+  display: flex;
+  background: var(--aitu-surface);
+  border: 1px solid var(--aitu-line);
+  border-radius: 11px;
+  padding: 3px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(8px);
+}
+
+.aitumap-floor-btn {
+  border: 0;
+  background: transparent;
+  color: var(--aitu-muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.aitumap-floor-btn:hover {
+  color: var(--aitu-text);
+  background: var(--aitu-surface2);
+}
+
+.aitumap-floor-btn.active {
+  background: var(--aitu-accent);
+  color: #ffffff;
+  box-shadow: 0 2px 6px var(--aitu-accent-soft);
+}
+
+/* Floating Action Buttons (Zoom & Center) */
+.aitumap-zoom-controls {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+.aitumap-btn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--aitu-line);
+  background: var(--aitu-surface);
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  color: var(--aitu-muted);
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(8px);
+  transition: background 0.16s ease, color 0.16s ease, transform 0.1s ease;
+}
+
+.aitumap-btn:hover {
+  background: var(--aitu-surface2);
+  color: var(--aitu-text);
+}
+
+.aitumap-btn:active {
+  transform: scale(0.95);
+}
+
+.aitumap-btn svg {
+  width: 17px;
+  height: 17px;
+}
+
+.aitumap-btn.accent {
+  background: var(--aitu-accent-soft);
+  color: var(--aitu-accent);
+  border-color: color-mix(in srgb, var(--aitu-accent) 40%, transparent);
+}
+
+.aitumap-btn.accent:hover {
+  background: var(--aitu-accent);
+  color: #ffffff;
+}
+
+/* Status Banner / Tooltip */
+.aitumap-status-banner {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  background: var(--aitu-surface);
+  border: 1px solid var(--aitu-line);
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: var(--aitu-text);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(calc(100% - 100px), 320px);
+  z-index: 10;
+  pointer-events: auto;
+  backdrop-filter: blur(8px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.aitumap-status-banner.hidden {
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+}
+
+.aitumap-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  flex: none;
+}
+
+.aitumap-status-dot.warning {
+  background: #f59e0b;
+}
+
+/* Floor switch alert badge (when room is on a different floor) */
+.aitumap-floor-jump-badge {
+  background: var(--aitu-accent-soft);
+  color: var(--aitu-accent);
+  border: 1px solid color-mix(in srgb, var(--aitu-accent) 30%, transparent);
+  border-radius: 8px;
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: 4px;
+  white-space: nowrap;
+}
+
+.aitumap-floor-jump-badge:hover {
+  background: var(--aitu-accent);
+  color: #fff;
+}
+
+/* Loading Spinner */
+.aitumap-loader {
+  position: absolute;
+  inset: 0;
+  background: var(--aitu-map-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  z-index: 20;
+  transition: opacity 0.3s ease;
+}
+
+.aitumap-loader.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.aitumap-spinner {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--aitu-line);
+  border-top-color: var(--aitu-accent);
+  border-radius: 50%;
+  animation: aituSpin 0.75s linear infinite;
+}
+
+@keyframes aituSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.aitumap-loader-text {
+  font-size: 12px;
+  color: var(--aitu-muted);
+}
+

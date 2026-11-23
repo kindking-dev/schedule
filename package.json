@@ -1,0 +1,20 @@
+{
+  "name": "aitu-schedule-map",
+  "version": "1.0.0",
+  "description": "Student Schedule with integrated Astana IT University (AITU) Interactive Map",
+  "main": "index.html",
+  "scripts": {
+    "start": "node server.js",
+    "build:map": "node build-map-data.js",
+    "test": "node test/verify-integration.js"
+  },
+  "keywords": [
+    "aitu",
+    "schedule",
+    "map",
+    "astana-it-university"
+  ],
+  "author": "",
+  "license": "MIT"
+}
+

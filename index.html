@@ -1,0 +1,624 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111214">
+<title>Schedule — Расписание с картой AITU</title>
+<link rel="stylesheet" href="integrations/aitumap/aitumap.css">
+<style>
+:root{
+ color-scheme:dark;--bg:#111214;--surface:#191b1f;--surface2:#22252a;--surface3:#2a2e35;
+ --text:#f1f2f4;--muted:#9298a2;--faint:#707782;--line:rgba(255,255,255,.08);
+ --accent:#83aaff;--accentSoft:rgba(110,153,255,.14);--accentGlow:rgba(110,153,255,.35);
+ --green:#7bc7a4;--greenSoft:rgba(123,199,164,.12);--shadow:0 18px 55px rgba(0,0,0,.32);
+ --radius:14px;--radius-modal:20px
+}
+:root[data-theme="light"]{
+ color-scheme:light;--bg:#f4f5f7;--surface:#fff;--surface2:#f0f2f5;--surface3:#e7eaf0;
+ --text:#20232a;--muted:#6d7580;--faint:#9097a1;--line:rgba(25,35,50,.10);
+ --accent:#3974df;--accentSoft:rgba(57,116,223,.11);--accentGlow:rgba(57,116,223,.28);
+ --green:#25865e;--greenSoft:rgba(37,134,94,.11);--shadow:0 18px 50px rgba(25,35,50,.13)
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 Inter,Manrope,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:-.018em}
+body.modal-open{overflow:hidden}
+button,input,select{font:inherit}button{color:inherit}
+.app{width:min(100% - 36px,980px);margin:0 auto;padding:22px 0 44px}
+header{height:42px;display:flex;align-items:center;justify-content:space-between;margin-bottom:30px}
+.brand{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:680;letter-spacing:-.035em}
+.brand-icon{width:34px;height:34px;border-radius:11px;background:var(--surface2);color:var(--accent);display:grid;place-items:center}
+.brand-icon svg{width:18px;height:18px}
+.icon-button{width:40px;height:40px;border:1px solid var(--line);background:var(--surface);border-radius:12px;display:grid;place-items:center;cursor:pointer;color:var(--muted);transition:.18s}
+.icon-button:hover{background:var(--surface2);color:var(--text)}
+.icon-button svg{width:18px;height:18px}
+.date-line{font-size:14px;color:var(--muted);margin:0 0 22px;letter-spacing:-.015em}
+.next-panel{display:flex;align-items:center;justify-content:space-between;gap:18px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px 20px;margin-bottom:34px;min-width:0}
+.next-left{display:flex;align-items:center;gap:14px;min-width:0}
+.next-icon{width:42px;height:42px;border-radius:14px;background:var(--accentSoft);color:var(--accent);display:grid;place-items:center;flex:none}
+.next-icon svg{width:20px;height:20px}
+.next-copy{min-width:0}
+.next-label{font-size:11px;color:var(--muted);margin-bottom:3px}
+.next-title{font-size:15px;line-height:1.35;font-weight:640;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.next-detail{font-size:12px;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.next-right{text-align:right;white-space:nowrap;flex:none}
+.next-time{font-size:20px;font-weight:680;letter-spacing:-.045em}
+.next-countdown{font-size:11px;color:var(--muted);margin-top:3px}
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:15px}
+h1{font-size:20px;letter-spacing:-.04em;font-weight:660;margin:0}
+.section-count{font-size:12px;color:var(--muted);white-space:nowrap}
+.day-nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-bottom:22px}
+.day-tab{min-width:0;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 13px;cursor:pointer;transition:background .16s,border-color .16s}
+.day-tab:hover{background:var(--surface2)}
+.day-tab.active{background:var(--accentSoft);border-color:color-mix(in srgb,var(--accent) 40%,transparent)}
+.day-name{display:block;font-size:13px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.day-meta{display:block;margin-top:4px;color:var(--muted);font-size:11px}
+.day-tab.active .day-name{color:var(--accent)}
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.view-switch{display:flex;flex:none;gap:2px;padding:3px;background:var(--surface);border:1px solid var(--line);border-radius:11px}
+.view-switch button{border:0;background:transparent;color:var(--muted);border-radius:8px;padding:7px 11px;font-size:12px;cursor:pointer}
+.view-switch button.active{background:var(--surface3);color:var(--text)}
+.tools{display:flex;align-items:center;gap:8px;min-width:0}
+.search-wrap{position:relative;min-width:0}
+.search-wrap svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--faint);pointer-events:none}
+.search{width:220px;height:36px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--text);padding:0 11px 0 34px;font-size:12px;outline:none}
+.search:focus,.filter:focus{border-color:var(--accent)}
+.filter{height:36px;max-width:160px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--muted);padding:0 10px;font-size:12px;outline:none}
+.reset{height:36px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--muted);padding:0 12px;font-size:12px;cursor:pointer}
+.reset:hover{background:var(--surface2);color:var(--text)}
+.day-heading{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding:0 0 10px;margin-bottom:11px}
+.day-heading h2{font-size:12px;text-transform:uppercase;letter-spacing:.11em;color:var(--muted);margin:0;font-weight:700}
+.day-heading span{font-size:11px;color:var(--faint)}
+.schedule{display:flex;flex-direction:column;gap:9px}
+.lesson-row{display:grid;grid-template-columns:72px minmax(0,1fr);gap:12px;align-items:stretch}
+.time{padding-top:14px;text-align:right}
+.time strong{display:block;font-size:14px;font-weight:680;letter-spacing:-.025em}
+.time span{display:block;font-size:11px;color:var(--muted);margin-top:3px}
+.lesson{min-width:0;border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:13px 15px;cursor:pointer;transition:background .16s,border-color .16s}
+.lesson:hover{background:var(--surface2)}
+.lesson.current{border-color:var(--accent);box-shadow:inset 2px 0 0 var(--accent)}
+.lesson.past{opacity:.55}
+.lesson-top{display:flex;justify-content:space-between;align-items:center;gap:9px;margin-bottom:6px}
+.code{font-size:10px;color:var(--muted);letter-spacing:.035em}
+.tags{display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.tag{font-size:10px;line-height:1.5;color:var(--muted);background:var(--surface2);border-radius:20px;padding:3px 8px;white-space:nowrap}
+.tag.online{color:var(--green);background:var(--greenSoft)}
+.tag.next{color:var(--accent);background:var(--accentSoft)}
+.subject{font-size:14px;line-height:1.35;font-weight:650;letter-spacing:-.025em;margin:0 0 10px}
+.meta{display:flex;align-items:center;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:11px}
+.meta span{display:inline-flex;align-items:center;gap:6px;min-width:0}
+.meta svg{width:14px;height:14px;color:var(--faint);flex:none}
+.star{border:0;background:transparent;color:var(--faint);padding:2px;display:grid;place-items:center;cursor:pointer}
+.star svg{width:15px;height:15px}
+.star.on{color:#d8ad5b}.star.on svg{fill:currentColor}
+.break{margin:2px 0 4px 84px;border:1px dashed var(--line);border-radius:11px;padding:9px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--muted);font-size:11px}
+.break strong{font-weight:600}
+.empty{border:1px dashed var(--line);border-radius:14px;padding:30px 18px;text-align:center;color:var(--muted);font-size:12px}
+.empty strong{display:block;color:var(--text);font-size:14px;margin-bottom:4px}
+
+/* Interactive Room Badge in Lesson Card */
+.room-badge-interactive{
+  display:inline-flex;align-items:center;gap:6px;padding:3px 8px 3px 6px;
+  background:var(--surface2);border:1px solid var(--line);border-radius:8px;
+  color:var(--text);cursor:pointer;transition:all .16s ease;font-size:11px;
+}
+.room-badge-interactive:hover{
+  background:var(--accentSoft);border-color:color-mix(in srgb,var(--accent) 35%,transparent);color:var(--accent)
+}
+.room-badge-interactive svg{color:var(--accent);width:13px;height:13px;flex:none}
+.room-map-link{
+  font-size:10px;font-weight:600;color:var(--accent);display:inline-flex;align-items:center;gap:3px;
+  margin-left:2px;padding-left:5px;border-left:1px solid var(--line);
+}
+.room-badge-interactive:hover .room-map-link{color:var(--accent)}
+.online-indicator{display:inline-flex;align-items:center;gap:5px;color:var(--green)}
+.online-indicator svg{width:13px;height:13px}
+
+/* Backdrops and Modals */
+.backdrop{position:fixed;inset:0;background:rgba(0,0,0,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:18px;z-index:90;opacity:0;transition:opacity .2s ease}
+.backdrop.open{display:flex;opacity:1}
+.modal{width:min(100%,460px);background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:var(--shadow);transform:scale(.97);transition:transform .2s ease}
+.backdrop.open .modal{transform:scale(1)}
+.modal-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.modal-code{font-size:10px;color:var(--muted)}
+.modal h3{font-size:19px;line-height:1.25;letter-spacing:-.035em;margin:8px 0}
+.close{width:32px;height:32px;border:0;border-radius:9px;background:var(--surface2);display:grid;place-items:center;cursor:pointer;color:var(--muted);transition:.16s}
+.close:hover{background:var(--surface3);color:var(--text)}
+.close svg{width:16px;height:16px}
+.modal-sub{font-size:12px;color:var(--muted);margin-bottom:15px}
+.details{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.detail{background:var(--surface2);border-radius:11px;padding:11px}
+.detail span{display:block;font-size:10px;color:var(--muted);margin-bottom:4px}
+.detail strong{font-size:12px;font-weight:620;overflow-wrap:anywhere}
+.modal-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.modal-actions button{flex:1;min-width:120px;border:1px solid var(--line);border-radius:10px;background:var(--surface2);padding:9px 10px;font-size:11px;cursor:pointer;transition:.16s}
+.modal-actions button:hover{background:var(--surface3);color:var(--text)}
+.modal-actions button.accent{background:var(--accentSoft);border-color:color-mix(in srgb,var(--accent) 35%,transparent);color:var(--accent);font-weight:600}
+.modal-actions button.accent:hover{background:var(--accent);color:#fff}
+.toast{position:fixed;bottom:20px;left:50%;transform:translate(-50%,10px);opacity:0;pointer-events:none;background:var(--text);color:var(--bg);padding:9px 14px;border-radius:30px;font-size:12px;transition:.2s;z-index:100}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* Navigation Map Modal - Apple Maps & Linear Polish */
+.map-modal-dialog{
+  width:min(100%,820px);height:min(calc(100vh - 44px),740px);
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-modal);
+  box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden;
+  transform:scale(.97) translateY(8px);transition:transform .24s cubic-bezier(.16,1,.3,1);
+}
+.backdrop.open .map-modal-dialog{transform:scale(1) translateY(0)}
+.map-modal-header{
+  padding:14px 18px 12px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex:none;
+}
+.map-modal-title-group h2{margin:0;font-size:16px;font-weight:680;letter-spacing:-.03em}
+.map-modal-subtitle{font-size:12px;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:6px}
+.map-modal-subtitle strong{color:var(--text);font-weight:600}
+.map-header-actions{display:flex;align-items:center;gap:10px}
+.map-building-tag{
+  font-size:11px;font-weight:600;padding:4px 9px;border-radius:8px;
+  background:var(--surface2);color:var(--muted);border:1px solid var(--line);
+}
+.map-modal-body{position:relative;flex:1;min-height:360px;width:100%;overflow:hidden;background:var(--aitu-map-bg)}
+.map-modal-footer{
+  padding:12px 18px;border-top:1px solid var(--line);background:var(--surface);
+  display:flex;align-items:center;justify-content:space-between;gap:14px;flex:none;
+}
+.map-footer-info{min-width:0}
+.map-footer-room{font-size:13px;font-weight:680;letter-spacing:-.02em;display:flex;align-items:center;gap:7px}
+.map-footer-room .status-pill{
+  font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px;
+  background:var(--accentSoft);color:var(--accent);
+}
+.map-footer-lesson{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.map-footer-actions{display:flex;align-items:center;gap:8px;flex:none}
+.map-action-btn{
+  border:1px solid var(--line);background:var(--surface2);border-radius:9px;
+  padding:8px 12px;font-size:11px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;
+  transition:.16s;color:var(--text);font-weight:550;
+}
+.map-action-btn:hover{background:var(--surface3)}
+.map-action-btn.primary{background:var(--accentSoft);border-color:color-mix(in srgb,var(--accent) 35%,transparent);color:var(--accent)}
+.map-action-btn.primary:hover{background:var(--accent);color:#fff}
+.map-action-btn svg{width:14px;height:14px}
+
+/* Responsive Styles */
+@media(max-width:650px){
+ .app{width:calc(100% - 28px);padding:15px 0 30px}
+ header{margin-bottom:22px}
+ .date-line{margin-bottom:17px;font-size:13px}
+ .next-panel{padding:14px;margin-bottom:25px;border-radius:15px;gap:10px}
+ .next-icon{width:38px;height:38px;border-radius:12px}
+ .next-title{font-size:13px}
+ .next-detail{font-size:10px}
+ .next-time{font-size:18px}
+ .next-countdown{font-size:10px}
+ .section-head{margin-bottom:12px}
+ h1{font-size:19px}
+ .day-nav{gap:6px;margin-bottom:16px}
+ .day-tab{padding:10px 9px;border-radius:12px}
+ .day-name{font-size:12px}
+ .day-meta{font-size:10px}
+ .toolbar{display:block;margin-bottom:13px}
+ .view-switch{width:max-content;margin-bottom:9px}
+ .tools{display:grid;grid-template-columns:minmax(0,1fr) 138px;gap:7px}
+ .search{width:100%}
+ .filter{width:100%;max-width:none}
+ .reset{display:none}
+ .lesson-row{grid-template-columns:57px minmax(0,1fr);gap:9px}
+ .time{padding-top:12px}
+ .time strong{font-size:12px}
+ .time span{font-size:10px}
+ .lesson{padding:11px 12px;border-radius:12px}
+ .subject{font-size:12px;margin-bottom:8px}
+ .meta{gap:8px;font-size:10px}
+ .code{font-size:9px}
+ .tag{font-size:9px;padding:2px 7px}
+ .break{margin-left:66px;font-size:10px}
+
+ /* Mobile Map Bottom Sheet */
+ .map-modal-dialog{
+   width:100%;height:calc(100% - env(safe-area-inset-top, 10px));
+   border-radius:18px 18px 0 0;margin-top:auto;
+ }
+ .map-modal-header{padding:12px 14px}
+ .map-modal-title-group h2{font-size:15px}
+ .map-modal-footer{padding:10px 14px;padding-bottom:calc(10px + env(safe-area-inset-bottom, 0px))}
+ .map-building-tag{display:none}
+}
+@media(max-width:380px){
+ .app{width:calc(100% - 22px)}
+ .day-nav{gap:5px}
+ .day-tab{padding:9px 7px}
+ .day-name{font-size:11px}
+ .day-meta{font-size:9px}
+ .lesson-row{grid-template-columns:51px minmax(0,1fr);gap:7px}
+ .lesson{padding:10px}
+ .subject{font-size:11px}
+ .meta{font-size:9px;gap:6px}
+ .code{font-size:8px}
+ .tag{font-size:8px;padding:2px 5px}
+ .break{margin-left:58px}
+ .room-badge-interactive{padding:2px 6px;font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<div class="app">
+ <header>
+  <div class="brand"><span class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17M8 14h3"/></svg></span>Schedule</div>
+  <button class="icon-button" id="themeToggle" aria-label="Переключить тему" title="Переключить тему"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg></button>
+ </header>
+
+ <p class="date-line" id="todayDate"></p>
+
+ <section class="next-panel" aria-label="Ближайшее занятие">
+  <div class="next-left">
+   <div class="next-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+   <div class="next-copy"><div class="next-label" id="nextLabel">Ближайшее занятие</div><div class="next-title" id="nextTitle">—</div><div class="next-detail" id="nextDetail">—</div></div>
+  </div>
+  <div class="next-right"><div class="next-time" id="nextTime">—</div><div class="next-countdown" id="nextCountdown">—</div></div>
+ </section>
+
+ <div class="section-head"><h1>Расписание</h1><span class="section-count" id="dayCount"></span></div>
+ <nav class="day-nav" id="dayNav" aria-label="Дни занятий"></nav>
+
+ <section class="toolbar">
+  <div class="view-switch"><button id="dayMode" class="active" type="button">По дням</button><button id="weekMode" type="button">Вся неделя</button></div>
+  <div class="tools">
+   <label class="search-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg><input id="search" class="search" type="search" placeholder="Поиск по расписанию…" aria-label="Поиск"></label>
+   <select id="filter" class="filter" aria-label="Фильтр занятий"><option value="all">Все занятия</option><option value="lecture">Лекции</option><option value="practice">Практика</option><option value="online">Онлайн</option><option value="favorite">Избранное</option></select>
+   <button id="reset" class="reset" type="button">Сбросить</button>
+  </div>
+ </section>
+ <main id="schedule" aria-live="polite"></main>
+</div>
+
+<!-- Modal 1: Lesson Details -->
+<div class="backdrop" id="backdrop">
+ <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal-head"><div><div class="modal-code" id="modalCode"></div><h3 id="modalTitle"></h3></div><button class="close" id="closeModal" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
+  <div class="modal-sub" id="modalSub"></div><div class="details" id="details"></div>
+  <div class="modal-actions">
+    <button id="modalOpenMap" class="accent" style="display:none;">Показать на карте ↗</button>
+    <button id="copyRoom">Скопировать аудиторию</button>
+    <button id="copyLesson">Скопировать занятие</button>
+  </div>
+ </section>
+</div>
+
+<!-- Modal 2: Navigation Map Modal (AITU Interactive Campus Map) -->
+<div class="backdrop" id="mapBackdrop" role="dialog" aria-modal="true" aria-labelledby="mapNavTitle">
+  <section class="map-modal-dialog">
+    <header class="map-modal-header">
+      <div class="map-modal-title-group">
+        <h2 id="mapNavTitle">Навигация</h2>
+        <div class="map-modal-subtitle" id="mapNavSubtitle">Главный корпус · <strong id="mapNavRoom">—</strong></div>
+      </div>
+      <div class="map-header-actions">
+        <span class="map-building-tag" id="mapBuildingBadge">Главный корпус</span>
+        <button class="close" id="closeMapModal" aria-label="Закрыть карту" title="Закрыть (Esc)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 6 12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="map-modal-body" id="mapModalBody">
+      <div id="scheduleMapMount" style="width:100%;height:100%;"></div>
+    </div>
+
+    <footer class="map-modal-footer">
+      <div class="map-footer-info">
+        <div class="map-footer-room">
+          <span id="mapFooterRoomText">—</span>
+          <span class="status-pill" id="mapFooterFloorBadge">—</span>
+        </div>
+        <div class="map-footer-lesson" id="mapFooterLessonText">—</div>
+      </div>
+      <div class="map-footer-actions">
+        <button class="map-action-btn primary" id="mapRecenterBtn" type="button" title="Сфокусировать на аудитории">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg>
+          Центрировать
+        </button>
+      </div>
+    </footer>
+  </section>
+</div>
+
+<div class="toast" id="toast">Скопировано</div>
+
+<!-- AITUMAP Configuration & Map Assets -->
+<script src="config/room-mapping.js"></script>
+<script src="integrations/aitumap/aitumap-data.js"></script>
+<script src="integrations/aitumap/aitumap-viewer.js"></script>
+
+<script>
+"use strict";
+const lessons=[
+{id:"tue1",day:2,start:"19:00",end:"19:50",subject:"Расширенная защита компьютерных сетей",code:"ACNS52-EN-L2",type:"lecture",teacher:"Shayeа I.A.",online:true,room:"Онлайн",building:"Онлайн"},
+{id:"tue2",day:2,start:"20:00",end:"20:50",subject:"Расширенная защита компьютерных сетей",code:"ACNS52-EN-L2",type:"lecture",teacher:"Shayeа I.A.",online:true,room:"Онлайн",building:"Онлайн"},
+{id:"tue3",day:2,start:"21:00",end:"21:50",subject:"Расширенная защита компьютерных сетей",code:"ACNS52-EN-L2",type:"lecture",teacher:"Shayeа I.A.",online:true,room:"Онлайн",building:"Онлайн"},
+{id:"wed1",day:3,start:"19:00",end:"19:50",subject:"Разработка безопасного программного обеспечения с использованием ИИ",code:"AIASD53-RU-L2",type:"lecture",teacher:"Глазырина Н.С.",online:false,room:"C1.3.362",building:"Главный корпус"},
+{id:"wed2",day:3,start:"20:00",end:"20:50",subject:"Разработка безопасного программного обеспечения с использованием ИИ",code:"AIASD53-RU-L2",type:"lecture",teacher:"Глазырина Н.С.",online:false,room:"C1.3.362",building:"Главный корпус"},
+{id:"wed3",day:3,start:"21:00",end:"21:50",subject:"Разработка безопасного программного обеспечения с использованием ИИ",code:"AIASD53-RU-P2",type:"practice",teacher:"Глазырина Н.С.",online:false,room:"C1.3.362",building:"Главный корпус"},
+{id:"fri1",day:5,start:"18:00",end:"18:50",subject:"Расширенная защита компьютерных сетей",code:"ACNS52-EN-P2",type:"practice",teacher:"Shayeа I.A.",online:true,room:"Онлайн",building:"Онлайн"},
+{id:"fri2",day:5,start:"19:00",end:"19:50",subject:"Расширенная защита компьютерных сетей",code:"ACNS52-EN-P2",type:"practice",teacher:"Shayeа I.A.",online:true,room:"Онлайн",building:"Онлайн"},
+{id:"sat1",day:6,start:"11:00",end:"11:50",subject:"История и философия науки",code:"HPS42-RU-P33",type:"practice",teacher:"Камарова Р.И.",online:false,room:"C1.2.245L",building:"Главный корпус"},
+{id:"sat2",day:6,start:"12:00",end:"12:50",subject:"История и философия науки",code:"HPS42-RU-P33",type:"practice",teacher:"Камарова Р.И.",online:false,room:"C1.2.245L",building:"Главный корпус"},
+{id:"sat3",day:6,start:"14:00",end:"14:50",subject:"Разработка безопасного программного обеспечения с использованием ИИ",code:"AIASD53-RU-P2",type:"practice",teacher:"Глазырина Н.С.",online:false,room:"C1.3.362",building:"Главный корпус"},
+{id:"sat4",day:6,start:"15:00",end:"15:50",subject:"Разработка безопасного программного обеспечения с использованием ИИ",code:"AIASD53-RU-L2",type:"lecture",teacher:"Глазырина Н.С.",online:false,room:"C1.3.362",building:"Главный корпус"},
+{id:"sat5",day:6,start:"16:00",end:"16:50",subject:"История и философия науки",code:"HPS42-RU-L17",type:"lecture",teacher:"Камарова Р.И.",online:false,room:"Актовый зал",building:"Главный корпус"},
+{id:"sat6",day:6,start:"17:00",end:"17:50",subject:"История и философия науки",code:"HPS42-RU-L17",type:"lecture",teacher:"Камарова Р.И.",online:false,room:"Актовый зал",building:"Главный корпус"}
+];
+const days=[{id:2,name:"Вторник"},{id:3,name:"Среда"},{id:5,name:"Пятница"},{id:6,name:"Суббота"}];
+const $=id=>document.getElementById(id);
+const toMin=t=>{const [h,m]=t.split(":").map(Number);return h*60+m};
+const typeName=t=>t==="lecture"?"Лекция":"Практика";
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let selectedDay=days.some(d=>d.id===new Date().getDay())?new Date().getDay():2,view="day",opened=null,favorites=[];
+let aituMapViewer=null,activeMapLesson=null;
+
+try{favorites=JSON.parse(localStorage.getItem("schedule-favorites")||"[]");if(!Array.isArray(favorites))favorites=[];}catch{favorites=[];}
+try{const t=localStorage.getItem("schedule-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t;const d=Number(localStorage.getItem("schedule-day"));if(days.some(x=>x.id===d))selectedDay=d;}catch{}
+
+function byDay(d){return lessons.filter(x=>x.day===d).sort((a,b)=>toMin(a.start)-toMin(b.start));}
+function plural(n){return n===1?"занятие":n>=2&&n<=4?"занятия":"занятий";}
+
+function updateDate(){
+ const now=new Date(),s=now.toLocaleDateString("ru-RU",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+ $("todayDate").textContent=s.charAt(0).toLocaleUpperCase("ru-RU")+s.slice(1);
+}
+
+function updateNext(){
+ const now=new Date(),today=now.getDay(),clock=now.getHours()*60+now.getMinutes();
+ let item=null,label="Ближайшее занятие",deltaMinutes=null;
+ const todays=byDay(today),ongoing=todays.find(x=>clock>=toMin(x.start)&&clock<toMin(x.end));
+ if(ongoing){item=ongoing;label="Сейчас идёт занятие";deltaMinutes=toMin(item.end)-clock;}
+ else{
+  const upcoming=todays.find(x=>toMin(x.start)>clock);
+  if(upcoming){item=upcoming;deltaMinutes=toMin(item.start)-clock;}
+  else{
+   const future=lessons.map(x=>({...x,daysAhead:(x.day-today+7)%7})).filter(x=>x.daysAhead>0).sort((a,b)=>a.daysAhead-b.daysAhead||toMin(a.start)-toMin(b.start));
+   item=future[0]||lessons[0];
+   const daysAhead=future.length?future[0].daysAhead:7;
+   deltaMinutes=daysAhead*1440-clock+toMin(item.start);
+  }
+ }
+ $("nextLabel").textContent=label;
+ $("nextTitle").textContent=item?item.subject:"Нет запланированных занятий";
+ $("nextDetail").textContent=item?`${days.find(d=>d.id===item.day).name} · ${typeName(item.type)} · ${item.online?"Онлайн":item.room}`:"";
+ $("nextTime").textContent=item?item.start:"—";
+ if(ongoing)$("nextCountdown").textContent=`До конца ${deltaMinutes} мин`;
+ else if(deltaMinutes!==null){
+  const d=Math.floor(deltaMinutes/1440),h=Math.floor((deltaMinutes%1440)/60),m=deltaMinutes%60;
+  $("nextCountdown").textContent=d>0?`Через ${d} дн. ${h} ч`:(h>0?`Через ${h} ч ${m} мин`:`Через ${m} мин`);
+ }else $("nextCountdown").textContent="";
+}
+
+function renderDays(){
+ $("dayNav").innerHTML=days.map(d=>{const first=byDay(d.id)[0];return `<button class="day-tab ${selectedDay===d.id?"active":""}" data-day="${d.id}" type="button"><span class="day-name">${d.name}</span><span class="day-meta">${first.start} · ${byDay(d.id).length} ${plural(byDay(d.id).length)}</span></button>`}).join("");
+ $("dayNav").querySelectorAll("[data-day]").forEach(b=>b.addEventListener("click",()=>{selectedDay=Number(b.dataset.day);localStorage.setItem("schedule-day",String(selectedDay));renderDays();renderSchedule();}));
+}
+
+function status(x){const n=new Date();if(n.getDay()!==x.day)return "";const v=n.getHours()*60+n.getMinutes();return v>=toMin(x.start)&&v<toMin(x.end)?"current":v>=toMin(x.end)?"past":"";}
+function isNext(x){const n=new Date();if(n.getDay()!==x.day)return false;const v=n.getHours()*60+n.getMinutes();return v<toMin(x.start)&&!byDay(x.day).some(y=>toMin(y.start)>v&&toMin(y.start)<toMin(x.start));}
+
+function filtered(){
+ const q=$("search").value.trim().toLocaleLowerCase("ru"),f=$("filter").value;
+ return lessons.filter(x=>{const text=[x.subject,x.code,x.teacher,x.room,x.building,typeName(x.type),x.online?"онлайн":"очно"].join(" ").toLocaleLowerCase("ru");return(!q||text.includes(q))&&(f==="all"||(f==="lecture"&&x.type==="lecture")||(f==="practice"&&x.type==="practice")||(f==="online"&&x.online)||(f==="favorite"&&favorites.includes(x.subject)));});
+}
+
+/**
+ * Builds classroom area markup:
+ * On-campus: clickable badge with geo-pin and «На карте ↗» button.
+ * Online: clean monitor badge, no map button.
+ */
+function roomMarkup(x){
+ if(x.online){
+  return `<span class="online-indicator"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Онлайн</span>`;
+ }
+ return `<button class="room-badge-interactive" data-open-map="${x.id}" type="button" title="Открыть аудиторию ${esc(x.room)} на карте">
+   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z"/><circle cx="12" cy="9" r="2"/></svg>
+   <span>${esc(x.room)}</span>
+   <span class="room-map-link">На карте ↗</span>
+ </button>`;
+}
+
+function lessonHTML(x){
+ return `<div class="lesson-row"><div class="time"><strong>${x.start}</strong><span>${x.end}</span></div>
+ <article class="lesson ${status(x)}" data-lesson="${x.id}" tabindex="0" role="button" aria-label="${esc(x.subject)}, ${x.start}">
+ <div class="lesson-top"><span class="code">${esc(x.code)}</span><div class="tags"><span class="tag">${typeName(x.type)}</span>${x.online?'<span class="tag online">Онлайн</span>':''}${isNext(x)?'<span class="tag next">Следующая</span>':''}
+ <button class="star ${favorites.includes(x.subject)?"on":""}" data-star="${esc(x.subject)}" type="button" aria-label="Избранное"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></svg></button></div></div>
+ <h3 class="subject">${esc(x.subject)}</h3>
+ <div class="meta">
+  <span>${roomMarkup(x)}</span>
+  ${!x.online ? `<span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-3"/></svg>${esc(x.building)}</span>` : ''}
+  <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M6 10v5c3.5 3 8.5 3 12 0v-5"/></svg>${esc(x.teacher)}</span>
+ </div>
+ </article></div>`;
+}
+
+function breakHTML(){return `<div class="break"><strong>Большой перерыв</strong><span>12:50–14:00 · 1 ч 10 мин</span></div>`;}
+
+function renderSchedule(){
+ const root=$("schedule"),all=filtered();
+ if(view==="day"){
+  const arr=byDay(selectedDay).filter(x=>all.includes(x)),day=days.find(d=>d.id===selectedDay);
+  $("dayCount").textContent=`${arr.length} ${plural(arr.length)}`;
+  if(!arr.length){root.innerHTML=`<div class="empty"><strong>${$("search").value||$("filter").value!=="all"?"Ничего не найдено":"В этот день занятий нет"}</strong>${$("search").value||$("filter").value!=="all"?"Измените запрос или фильтр.":"Выберите другой день."}</div>`;return;}
+  root.innerHTML=`<div class="day-heading"><h2>${day.name}</h2><span>${arr.length} ${plural(arr.length)}</span></div><div class="schedule">${arr.map(x=>(x.id==="sat3"?breakHTML():"")+lessonHTML(x)).join("")}</div>`;
+ }else{
+  $("dayCount").textContent=`${all.length} из 14 занятий`;
+  if(!all.length){root.innerHTML='<div class="empty"><strong>Ничего не найдено</strong>Измените запрос или фильтр.</div>';return;}
+  root.innerHTML=days.map(d=>{const arr=all.filter(x=>x.day===d.id);if(!arr.length)return "";return `<section style="margin-bottom:22px"><div class="day-heading"><h2>${d.name}</h2><span>${arr.length} ${plural(arr.length)}</span></div><div class="schedule">${arr.map(x=>(x.id==="sat3"?breakHTML():"")+lessonHTML(x)).join("")}</div></section>`}).join("");
+ }
+
+ // Lesson card click -> opens lesson modal
+ root.querySelectorAll("[data-lesson]").forEach(el=>{
+  const open=()=>showModal(lessons.find(x=>x.id===el.dataset.lesson));
+  el.addEventListener("click",e=>{
+    if(e.target.closest("[data-star]") || e.target.closest("[data-open-map]")) return;
+    open();
+  });
+  el.addEventListener("keydown",e=>{
+    if((e.key==="Enter"||e.key===" ") && !e.target.closest("[data-open-map]")){
+      e.preventDefault();open();
+    }
+  });
+ });
+
+ // Dedicated map trigger button in card
+ root.querySelectorAll("[data-open-map]").forEach(btn=>{
+  btn.addEventListener("click",e=>{
+    e.stopPropagation();
+    const l = lessons.find(x=>x.id===btn.dataset.openMap);
+    if(l && !l.online) openMapModal(l);
+  });
+ });
+
+ root.querySelectorAll("[data-star]").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();const s=b.dataset.star;favorites=favorites.includes(s)?favorites.filter(v=>v!==s):[...favorites,s];localStorage.setItem("schedule-favorites",JSON.stringify(favorites));renderSchedule();}));
+}
+
+function showModal(x){
+ if(!x)return;opened=x;$("modalCode").textContent=x.code;$("modalTitle").textContent=x.subject;
+ $("modalSub").textContent=`${days.find(d=>d.id===x.day).name} · ${x.start}–${x.end}`;
+ const rows=[["День",days.find(d=>d.id===x.day).name],["Время",`${x.start}–${x.end}`],["Тип занятия",typeName(x.type)],["Преподаватель",x.teacher],["Формат",x.online?"Онлайн":"Очно"],["Аудитория",x.room],["Корпус",x.building]];
+ $("details").innerHTML=rows.map(([a,b])=>`<div class="detail"><span>${a}</span><strong>${esc(b)}</strong></div>`).join("");
+ $("copyRoom").textContent=x.online?"Скопировать формат":"Скопировать аудиторию";
+
+ const mapBtn=$("modalOpenMap");
+ if(mapBtn){
+   if(!x.online){
+     mapBtn.style.display="block";
+     mapBtn.onclick=()=>{ closeModal(); openMapModal(x); };
+   }else{
+     mapBtn.style.display="none";
+   }
+ }
+
+ $("backdrop").classList.add("open");
+ document.body.classList.add("modal-open");
+ $("closeModal").focus();
+}
+
+function closeModal(){
+ $("backdrop").classList.remove("open");
+ opened=null;
+ if(!$("mapBackdrop").classList.contains("open")){
+   document.body.classList.remove("modal-open");
+ }
+}
+
+/**
+ * Opens the Navigation Map modal and focuses on the requested classroom.
+ * Initializes the map viewer lazily on first access.
+ */
+function openMapModal(lesson){
+ if(!lesson || lesson.online) return;
+ activeMapLesson = lesson;
+
+ const roomStr = lesson.room;
+ const buildingStr = lesson.building || "Главный корпус";
+
+ $("mapNavRoom").textContent = roomStr;
+ $("mapBuildingBadge").textContent = buildingStr;
+ $("mapNavSubtitle").innerHTML = `${esc(buildingStr)} · <strong>${esc(roomStr)}</strong>`;
+ $("mapFooterRoomText").textContent = roomStr;
+ $("mapFooterLessonText").textContent = `${lesson.subject} · ${lesson.teacher} · ${lesson.start}–${lesson.end}`;
+
+ // Resolve room floor info
+ const resolved = window.AituRoomMapping ? window.AituRoomMapping.resolveRoom(roomStr) : null;
+ const floorText = (resolved && resolved.floorName) ? resolved.floorName : "Главный корпус";
+ $("mapFooterFloorBadge").textContent = floorText;
+
+ $("mapBackdrop").classList.add("open");
+ document.body.classList.add("modal-open");
+ $("closeMapModal").focus();
+
+ // Lazy init viewer
+ const currentTheme = document.documentElement.dataset.theme === "light" ? "light" : "dark";
+
+ if(!aituMapViewer){
+   aituMapViewer = new window.AituMapViewer("#scheduleMapMount", {
+     initialFloor: (resolved && resolved.floor) ? resolved.floor : 1,
+     theme: currentTheme,
+     enableSearch: true,
+     enableControls: true,
+     onRoomFound: (info) => {
+       if (info && info.floor) {
+         $("mapFooterFloorBadge").textContent = `${info.floor} этаж`;
+       }
+     }
+   });
+ } else {
+   aituMapViewer.setTheme(currentTheme);
+ }
+
+ // Focus room with smooth animation
+ setTimeout(()=>{
+   if(aituMapViewer){
+     aituMapViewer.openRoom(roomStr);
+   }
+ }, 120);
+}
+
+function closeMapModal(){
+ $("mapBackdrop").classList.remove("open");
+ activeMapLesson = null;
+ if(!$("backdrop").classList.contains("open")){
+   document.body.classList.remove("modal-open");
+ }
+}
+
+// Re-center button on map footer
+$("mapRecenterBtn").addEventListener("click",()=>{
+ if(aituMapViewer && activeMapLesson){
+   aituMapViewer.focusRoom(activeMapLesson.room, true);
+ }
+});
+
+$("closeMapModal").addEventListener("click", closeMapModal);
+$("mapBackdrop").addEventListener("click", e=>{
+ if(e.target===$("mapBackdrop")) closeMapModal();
+});
+
+async function copyText(text){
+ try{await navigator.clipboard.writeText(text);}catch{const t=document.createElement("textarea");t.value=text;t.style.position="fixed";t.style.opacity="0";document.body.appendChild(t);t.select();document.execCommand("copy");t.remove();}
+ $("toast").classList.add("show");setTimeout(()=>$("toast").classList.remove("show"),1400);
+}
+
+$("themeToggle").addEventListener("click",()=>{
+ const t=document.documentElement.dataset.theme==="light"?"dark":"light";
+ document.documentElement.dataset.theme=t;
+ localStorage.setItem("schedule-theme",t);
+ if(aituMapViewer){
+   aituMapViewer.setTheme(t);
+ }
+});
+
+$("dayMode").addEventListener("click",()=>{view="day";$("dayMode").classList.add("active");$("weekMode").classList.remove("active");renderSchedule();});
+$("weekMode").addEventListener("click",()=>{view="week";$("weekMode").classList.add("active");$("dayMode").classList.remove("active");renderSchedule();});
+$("search").addEventListener("input",renderSchedule);$("filter").addEventListener("change",renderSchedule);
+$("reset").addEventListener("click",()=>{$("search").value="";$("filter").value="all";renderSchedule();});
+$("closeModal").addEventListener("click",closeModal);
+$("backdrop").addEventListener("click",e=>{if(e.target===$("backdrop"))closeModal();});
+
+document.addEventListener("keydown",e=>{
+ if(e.key==="Escape"){
+   if($("mapBackdrop").classList.contains("open")){
+     closeMapModal();
+   } else if($("backdrop").classList.contains("open")){
+     closeModal();
+   }
+ }
+});
+
+$("copyRoom").addEventListener("click",()=>{if(opened)copyText(opened.room);});
+$("copyLesson").addEventListener("click",()=>{if(opened)copyText(`${opened.subject}\n${days.find(d=>d.id===opened.day).name}, ${opened.start}–${opened.end}\n${typeName(opened.type)}\n${opened.room} · ${opened.building}\n${opened.teacher}`);});
+
+updateDate();updateNext();renderDays();renderSchedule();
+setInterval(()=>{updateDate();updateNext();renderSchedule();},30000);
+</script>
+</body>
+</html>
